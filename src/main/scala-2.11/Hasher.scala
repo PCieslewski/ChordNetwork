@@ -2,10 +2,11 @@ import java.nio.ByteBuffer
 
 object Hasher {
 
-  val md = java.security.MessageDigest.getInstance("SHA-1")
-
   //Returns a 62-Bit Long from the SHA-1 Hash
   def hash(in: String): Long = {
+
+    val md = java.security.MessageDigest.getInstance("SHA-1")
+
 //  println("IN: " + in)
     val bytes: Array[Byte] = md.digest(in.getBytes) //160 bit SHA-1 Hash
 
