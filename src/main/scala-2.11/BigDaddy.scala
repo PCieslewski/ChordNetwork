@@ -13,7 +13,7 @@ class BigDaddy extends Actor{
   var will = nodeSystem.actorOf(Props(new Node("will" + nodeCount)), name = "will" + nodeCount)
   var pawel = nodeSystem.actorOf(Props(new Node("pawel" + nodeCount)), name = "pawel" + nodeCount)
 
-  pawel ! LatchOntoParent(will)
+  pawel ! JoinSystem(will)
 
   def receive = {
     case NewNode() => {

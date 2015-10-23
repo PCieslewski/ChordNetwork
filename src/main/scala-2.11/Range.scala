@@ -13,14 +13,6 @@ class Range(start: Long, end: Long){
 
   }
 
-  def getStart(): Long ={
-    return start
-  }
-
-  def getEnd(): Long ={
-    return end
-  }
-
   //Helper function for above.
   private def contains(start: Long, end: Long, id: Long): Boolean ={
     if(id >= start && id < end){
@@ -29,6 +21,14 @@ class Range(start: Long, end: Long){
     else{
       return false
     }
+  }
+
+  def getStart(): Long ={
+    return start
+  }
+
+  def getEnd(): Long ={
+    return end
   }
 
   override def toString() : String ={

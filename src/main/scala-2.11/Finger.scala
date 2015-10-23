@@ -4,6 +4,6 @@ class Finger() {
 
   var start: Long = 0
   var range: Range = null
-  var predecessor: ActorRef = null
+  var successor: ActorRef = null
 
 }

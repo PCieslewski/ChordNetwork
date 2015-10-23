@@ -1,6 +1,5 @@
 import akka.actor._
 import akka.pattern.{ask, pipe}
-import Hasher.hash
 import akka.util._
 
 import scala.collection.mutable
@@ -14,10 +13,10 @@ class Node(name: String) extends Actor{
   import context.dispatcher
   implicit val timeout = Timeout(60 seconds)
 
-  val n: Long = hash(name)
-println("Name: " + name + " N: " + n)
+  val n: Long = Hasher.hash(name)
+  println(name + " " + n)
 
-  var nextNode: ActorRef = self
+  var prevNode: ActorRef = self
 
   var range: Range = new Range(n, n)
 
@@ -25,9 +24,9 @@ println("Name: " + name + " N: " + n)
 
   var fingerTable: Array[Finger] = Array.fill(62)(new Finger())
 
-//println("N: " + n)
+  initFingerTable()
 
-  def initFingerTable(): Unit = {
+  def initFingerTable() = {
 
     for(k <- 0 to 61) {
       fingerTable(k).start = ((BigInt(n) + BigInt(2).pow(k)) % BigInt(2).pow(62)).toLong
@@ -37,107 +36,146 @@ println("Name: " + name + " N: " + n)
       val interval: Range = new Range(fingerTable(k).start, fingerTable(k+1).start)
       fingerTable(k).range = interval
     }
-
     fingerTable(61).range = new Range(fingerTable(61).start, n)
 
     for(k <- 0 to 61) {
-      fingerTable(k).predecessor = self
+      fingerTable(k).successor = self
     }
-
-//    for(k <- 0 to 61) {
-//      println(fingerTable(k).range)
-//    }
 
   }
 
-//  def closestPrecedingFinger(id: Long): ActorRef = {
+////TODO
+//  def join(nodeInCircle: ActorRef) = {
+//
+//    val futureParent = findParent(nodeInCircle)
+//    futureParent.onComplete {
+//      case Success(parent) => {
+//        joinOn(parent)
+//      }
+//      case Failure(e) => println(e.printStackTrace())
+//    }
+////    var predecessor = findPredecessor()
 //
 //  }
+//
+//  def joinOn(parentNode: ActorRef) ={
+//    //both nodes have to update range and .next node
+//    //original changes range from his to new node, and makes .next new node
+//    //new node makes his range from him to (old)parent.next range, and makes (old)parent.next = his .next
+//
+//    //maybe also update finger tables when we do join
+//    parentNode ! JoinOn(n)
+//  }
 
-//TODO
-  def join(nodeInCircle: ActorRef) = {
+//  def updateFingerTable() ={
+//    for(k <- 0 to 61) {
+//      val predecessor = findPredecessor(fingerTable(k).start);
+//      predecessor.onComplete {
+//        case Success(thePredecessor) => fingerTable(k).predecessor = thePredecessor
+//        case Failure(e) => println("Error :(")
+//      }
+//    }
+//  }
 
-    val futureParent = findParent(nodeInCircle)
-    futureParent.onComplete {
-      case Success(parent) => {
-        joinOn(parent)
-      }
-      case Failure(e) => println(e.printStackTrace())
-    }
-//    var predecessor = findPredecessor()
-
-  }
-
-  def joinOn(parentNode: ActorRef) ={
-    //both nodes have to update range and .next node
-    //original changes range from his to new node, and makes .next new node
-    //new node makes his range from him to (old)parent.next range, and makes (old)parent.next = his .next
-
-    //maybe also update finger tables when we do join
-    parentNode ! JoinOn(n)
-  }
-
-  def updateFingerTable() ={
-    for(k <- 0 to 61) {
-      val predecessor = findPredecessor(fingerTable(k).start);
-      predecessor.onComplete {
-        case Success(thePredecessor) => fingerTable(k).predecessor = thePredecessor
-        case Failure(e) => println("Error :(")
-      }
-    }
-  }
-
-  def findPredecessor(id: Long): Future[ActorRef] = Future{
-    val futurePredecessor = self ? InRange(id)
-    futurePredecessor.asInstanceOf[ActorRef]
-  }
-
-  def findParent(nodeInCircle: ActorRef): Future[ActorRef] = Future{
-    val futureParent = nodeInCircle ? FindParent(n)
-    futureParent.asInstanceOf[ActorRef]
-  }
+//  def findPredecessor(id: Long): Future[ActorRef] = Future{
+//    val futurePredecessor = self ? InRange(id)
+//    futurePredecessor.asInstanceOf[ActorRef]
+//  }
+//
+//  def findParent(nodeInCircle: ActorRef): Future[ActorRef] = Future{
+//    val futureParent = nodeInCircle ? FindParent(n)
+//    futureParent.asInstanceOf[ActorRef]
+//  }
 
   def receive() ={
 
-    case InRange(id: Long) => {
-      if(range.contains(id)) {
-        sender ! self
+//    case InRange(id: Long) => {
+//      if(range.contains(id)) {
+//        sender ! self
+//      }
+//      else {
+//        for(k <- 61 to 0 by -1) {
+//          if(fingerTable(k).range.contains(id)) {
+//            val futurePredecessor = fingerTable(k).predecessor ? InRange(id)
+//            futurePredecessor pipeTo sender
+//          }
+//        }
+//      }
+//    }
+//
+//    case FindParent(childId: Long) => {
+//      val futurePredecessor = findPredecessor(childId)
+//      futurePredecessor pipeTo sender
+//    }
+//
+
+    //This message is sent by a child node that is not in the circle to any node
+    //Eventually, Parent() will get returned to the child
+    case FindParent(childId: Long) => {
+
+      if(range.contains(childId)){
+        sender ! ParentResponse(prevNode, range)
       }
-      else {
-        for(k <- 61 to 0 by -1) {
-          if(fingerTable(k).range.contains(id)) {
-            val futurePredecessor = fingerTable(k).predecessor ? InRange(id)
-            futurePredecessor pipeTo sender
+      else{
+        for (k <- 61 to 0 by -1) {
+          if (fingerTable(k).range.contains(childId)) {
+            fingerTable(k).successor forward FindParent(childId)
           }
         }
       }
+
     }
 
-    case FindParent(childId: Long) => {
-      val futurePredecessor = findPredecessor(childId)
-      futurePredecessor pipeTo sender
+    //Once you recieve your parent, send the JoinOn along with your ID.
+    case ParentResponse(parentPrev: ActorRef, parentOldRange: Range) => {
+
+      //Update childs properties to reflect its position in circle
+      prevNode = parentPrev
+      range = new Range(parentOldRange.getStart(),n)
+      println("Child New Range: " + range)
+
+      //Initialize child finger table. NOT THOROUGH
+      for(k <- 0 to 61) {
+        if(range.contains(fingerTable(k).start)){
+          fingerTable(k).successor = self
+        }
+        else{
+          fingerTable(k).successor = sender
+        }
+      }
+
+      //Initiate Join
+      sender ! JoinOn(n, range)
     }
 
-    case JoinOn(childId: Long) => {
-      val oldNextNode = nextNode
-      val oldEndPosition = range.getEnd()
+    //This message is sent by the child and recieved by the parent.
+    //This initiates the joining of a child node
+    case JoinOn(childId: Long, childRange: Range) => {
 
-      println("OLD RANGE: " + range)
+      prevNode = sender
+      range = new Range(childId, n) //n = parentId
+      println("Parent New Range: " + range)
 
-      nextNode = sender
-      range = new Range(n, childId) //n = parentId
+      //Ensure that any fingers which may point to child are updated
+      //COULD BE OPTIMIZED - i think
+      for(k <- 0 to 61) {
+        if(childRange.contains(fingerTable(k).start)){
+          fingerTable(k).successor = sender
+        }
+      }
 
-      println("Will's RANGE: " + range)
-
-      sender ! ConfirmJoinOn(oldNextNode, oldEndPosition)
     }
 
-    case ConfirmJoinOn(oldNextNode: ActorRef, oldEndPosition: Long) => {
-      nextNode = oldNextNode
-      range =  new Range(n, oldEndPosition)
-      println("Confirmed join :)")
-      println(range)
+    case JoinSystem(node: ActorRef) => {
+      node ! FindParent(n)
     }
+
+//    case ConfirmJoinOn(oldNextNode: ActorRef, oldEndPosition: Long) => {
+//      nextNode = oldNextNode
+//      range =  new Range(n, oldEndPosition)
+//      println("Confirmed join :)")
+//      println(range)
+//    }
 
 //    case FindPredecessor(id: Long, originalSender: ActorRef) => {
 //      if(range.contains(id)) {
@@ -152,13 +190,13 @@ println("Name: " + name + " N: " + n)
 //      }
 //    }
 
-    case LatchOntoParent(parentNode: ActorRef) => {
-      join(parentNode)
-    }
+//    case LatchOntoParent(parentNode: ActorRef) => {
+//      join(parentNode)
+//    }
 
 
     case _ => {
-      println("YO")
+      println("Node got a strange message.")
     }
 
   }
