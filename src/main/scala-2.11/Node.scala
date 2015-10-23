@@ -14,7 +14,7 @@ class Node(name: String) extends Actor{
   implicit val timeout = Timeout(60 seconds)
 
   val n: Long = Hasher.hash(name)
-  println(name + " " + n)
+  println(name + " " + n + " " + self)
 
   var prevNode: ActorRef = self
 
@@ -23,6 +23,8 @@ class Node(name: String) extends Actor{
   var dataList: mutable.MutableList[Data] = new mutable.MutableList[Data]
 
   var fingerTable: Array[Finger] = Array.fill(62)(new Finger())
+
+  var isBusy: Boolean = true
 
   initFingerTable()
 
@@ -109,30 +111,41 @@ class Node(name: String) extends Actor{
 //    }
 //
 
+    case DisplayRange() => {
+      println("Name: " + name + " Range: " + range)
+    }
+
     //This message is sent by a child node that is not in the circle to any node
     //Eventually, Parent() will get returned to the child
-    case FindParent(childId: Long) => {
+    case FindParent(childId: Long, originalNode: ActorRef) => {
 
       if(range.contains(childId)){
-        sender ! ParentResponse(prevNode, range)
+        if(isBusy){
+          println("BUSY")
+          context.system.scheduler.scheduleOnce(10 milliseconds, self, FindParent(childId, originalNode))
+        }
+        else {
+          isBusy = true
+          originalNode ! ParentResponse(prevNode, range)
+          println(name + " -- sent parent response")
+        }
       }
       else{
         for (k <- 61 to 0 by -1) {
           if (fingerTable(k).range.contains(childId)) {
-            fingerTable(k).successor forward FindParent(childId)
+            fingerTable(k).successor ! FindParent(childId, originalNode)
           }
         }
       }
 
     }
 
-    //Once you recieve your parent, send the JoinOn along with your ID.
+    //Once you receive your parent, send the JoinOn along with your ID.
     case ParentResponse(parentPrev: ActorRef, parentOldRange: Range) => {
 
       //Update childs properties to reflect its position in circle
       prevNode = parentPrev
       range = new Range(parentOldRange.getStart(),n)
-      println("Child New Range: " + range)
 
       //Initialize child finger table. NOT THOROUGH
       for(k <- 0 to 61) {
@@ -148,13 +161,12 @@ class Node(name: String) extends Actor{
       sender ! JoinOn(n, range)
     }
 
-    //This message is sent by the child and recieved by the parent.
+    //This message is sent by the child and received by the parent.
     //This initiates the joining of a child node
     case JoinOn(childId: Long, childRange: Range) => {
 
       prevNode = sender
       range = new Range(childId, n) //n = parentId
-      println("Parent New Range: " + range)
 
       //Ensure that any fingers which may point to child are updated
       //COULD BE OPTIMIZED - i think
@@ -164,10 +176,18 @@ class Node(name: String) extends Actor{
         }
       }
 
+      //Set busy back to false to accept new nodes into the system.
+      isBusy = false
+      sender ! SetBusy(false)
+
     }
 
     case JoinSystem(node: ActorRef) => {
-      node ! FindParent(n)
+      node ! FindParent(n, self)
+    }
+
+    case SetBusy(flag: Boolean) => {
+      isBusy = flag
     }
 
 //    case ConfirmJoinOn(oldNextNode: ActorRef, oldEndPosition: Long) => {
