@@ -26,6 +26,9 @@ class Node(name: String) extends Actor{
 
   var isBusy: Boolean = true
 
+  var pointedToByFingers: mutable.ArrayBuffer[FingerPointer] = new mutable.ArrayBuffer[FingerPointer]
+
+
   initFingerTable()
 
   def initFingerTable() = {
@@ -188,6 +191,38 @@ class Node(name: String) extends Actor{
 
     case SetBusy(flag: Boolean) => {
       isBusy = flag
+    }
+
+      //Asks a good node to help find where the new fingers should go
+    case FindFingerSuccessor(id: Long, originalSender: ActorRef, fingerNumber: Int) => {
+      if(range.contains(id)) {
+        originalSender ! SuccessorResponse(self, fingerNumber)
+      }
+      else{
+        for (k <- 61 to 0 by -1) {
+          if (fingerTable(k).range.contains(id)) {
+            fingerTable(k).successor ! FindFingerSuccessor(id, originalSender, fingerNumber)
+          }
+        }
+      }
+    }
+
+    case SuccessorResponse(fingerSuccessor: ActorRef, fingerNumber: Int) => {
+      fingerTable(fingerNumber).successor = fingerSuccessor
+    }
+
+      //TODO: refresh this
+    case UpdateFingerTable() => {
+      for(k <- 0 to 61) {
+        if(range.contains(fingerTable(k).start)) {
+          fingerTable(k).successor = self
+        }
+        else {
+          //could be fingerTable(k).successor VVV
+          self ! FindFingerSuccessor(fingerTable(k).start, self, k)
+        }
+      }
+
     }
 
 //    case ConfirmJoinOn(oldNextNode: ActorRef, oldEndPosition: Long) => {

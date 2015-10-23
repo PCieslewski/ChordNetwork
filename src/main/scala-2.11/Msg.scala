@@ -17,3 +17,7 @@ case class JoinSystem(node: ActorRef) extends Msg
 case class SetBusy(flag: Boolean) extends Msg
 
 case class DisplayRange() extends Msg
+
+case class FindFingerSuccessor(id: Long, originalSender: ActorRef, fingerNumber: Int) extends Msg
+case class SuccessorResponse(fingerSuccessor: ActorRef, fingerNumber: Int) extends Msg
+case class UpdateFingerTable() extends Msg
