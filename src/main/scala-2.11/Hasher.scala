@@ -6,7 +6,7 @@ object Hasher {
 
   //Returns a 62-Bit Long from the SHA-1 Hash
   def hash(in: String): Long = {
-
+//  println("IN: " + in)
     val bytes: Array[Byte] = md.digest(in.getBytes) //160 bit SHA-1 Hash
 
     var longBytes: Array[Byte] = bytes.slice(bytes.length-8, bytes.length)

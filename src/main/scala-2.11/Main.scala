@@ -1,12 +1,15 @@
 import javax.swing.BoundedRangeModel
 
 import Hasher.hash
+import akka.actor.{Props, ActorSystem}
 
 object Main {
 
   def main(args: Array[String]) {
 
-////    println(hash("Hello"))
+//    println(hash("Hello"))
+//    println(hash("Hello"))
+//    println(hash("Hello"))
 //     val a: Node = new Node("aasadftrmnhg")
 //    a.initFingerTable()
 
@@ -17,6 +20,10 @@ object Main {
 //  var a: Range = new Range(5,1)
 //    println(a.contains(1))
 //    println(a.contains(5))
+
+    val bigSystem = ActorSystem("BigSystem")
+    bigSystem.actorOf(Props(new BigDaddy()), name="BigDaddy")
+
 
   }
 

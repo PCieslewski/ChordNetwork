@@ -1,31 +1,36 @@
 import akka.actor._
 import akka.pattern.{ask, pipe}
 import Hasher.hash
+import akka.util._
 
 import scala.collection.mutable
 import scala.concurrent.Future
+import scala.concurrent.duration._
 
 import scala.util._
 
 class Node(name: String) extends Actor{
 
   import context.dispatcher
+  implicit val timeout = Timeout(60 seconds)
 
   val n: Long = hash(name)
+println("Name: " + name + " N: " + n)
 
   var nextNode: ActorRef = self
 
-  var range: Range = new Range(0, Long.MaxValue >>> 1)
+  var range: Range = new Range(n, n)
 
   var dataList: mutable.MutableList[Data] = new mutable.MutableList[Data]
 
   var fingerTable: Array[Finger] = Array.fill(62)(new Finger())
 
+//println("N: " + n)
 
   def initFingerTable(): Unit = {
 
     for(k <- 0 to 61) {
-      fingerTable(k).start = (((BigInt(n) + BigInt(2).pow(k)) % BigInt(2).pow(62))).toLong
+      fingerTable(k).start = ((BigInt(n) + BigInt(2).pow(k)) % BigInt(2).pow(62)).toLong
     }
 
     for(k <- 0 to 60) {
@@ -49,12 +54,27 @@ class Node(name: String) extends Actor{
 //
 //  }
 
+//TODO
+  def join(nodeInCircle: ActorRef) = {
+
+    val futureParent = findParent(nodeInCircle)
+    futureParent.onComplete {
+      case Success(parent) => {
+        joinOn(parent)
+      }
+      case Failure(e) => println(e.printStackTrace())
+    }
+//    var predecessor = findPredecessor()
+
+  }
 
   def joinOn(parentNode: ActorRef) ={
     //both nodes have to update range and .next node
     //original changes range from his to new node, and makes .next new node
     //new node makes his range from him to (old)parent.next range, and makes (old)parent.next = his .next
 
+    //maybe also update finger tables when we do join
+    parentNode ! JoinOn(n)
   }
 
   def updateFingerTable() ={
@@ -68,8 +88,13 @@ class Node(name: String) extends Actor{
   }
 
   def findPredecessor(id: Long): Future[ActorRef] = Future{
-    val futurePredecessor = (self ? InRange(id))
+    val futurePredecessor = self ? InRange(id)
     futurePredecessor.asInstanceOf[ActorRef]
+  }
+
+  def findParent(nodeInCircle: ActorRef): Future[ActorRef] = Future{
+    val futureParent = nodeInCircle ? FindParent(n)
+    futureParent.asInstanceOf[ActorRef]
   }
 
   def receive() ={
@@ -88,12 +113,21 @@ class Node(name: String) extends Actor{
       }
     }
 
+    case FindParent(childId: Long) => {
+      val futurePredecessor = findPredecessor(childId)
+      futurePredecessor pipeTo sender
+    }
+
     case JoinOn(childId: Long) => {
       val oldNextNode = nextNode
       val oldEndPosition = range.getEnd()
 
+      println("OLD RANGE: " + range)
+
       nextNode = sender
       range = new Range(n, childId) //n = parentId
+
+      println("Will's RANGE: " + range)
 
       sender ! ConfirmJoinOn(oldNextNode, oldEndPosition)
     }
@@ -101,10 +135,8 @@ class Node(name: String) extends Actor{
     case ConfirmJoinOn(oldNextNode: ActorRef, oldEndPosition: Long) => {
       nextNode = oldNextNode
       range =  new Range(n, oldEndPosition)
-    }
-
-    case Join(originalSender: ActorRef, id: Long) => {
-
+      println("Confirmed join :)")
+      println(range)
     }
 
 //    case FindPredecessor(id: Long, originalSender: ActorRef) => {
@@ -120,6 +152,9 @@ class Node(name: String) extends Actor{
 //      }
 //    }
 
+    case LatchOntoParent(parentNode: ActorRef) => {
+      join(parentNode)
+    }
 
 
     case _ => {
