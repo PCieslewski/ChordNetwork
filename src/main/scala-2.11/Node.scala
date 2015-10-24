@@ -21,7 +21,7 @@ class Node(name: String, bigDaddy: ActorRef) extends Actor{
 
   var range: Range = new Range(n, n)
 
-  var dataList: mutable.MutableList[Data] = new mutable.MutableList[Data]
+  var dataList: ArrayBuffer[Data] = new ArrayBuffer[Data]
 
   var fingerTable: Array[Finger] = Array.fill(62)(new Finger())
 
@@ -275,6 +275,49 @@ class Node(name: String, bigDaddy: ActorRef) extends Actor{
 
     case DisplayPreviousNode() => {
       println("Name: " + name + " Previous Node: " + prevNode)
+    }
+
+    case StoreData(newData: Data) => {
+      if(range.contains(newData.id)) {
+        println("added to datalist")
+        dataList += newData
+      }
+      else {
+        println("bouncing (Store)")
+        for(k <- 61 to 0 by -1) {
+          if(fingerTable(k).range.contains(newData.id)) {
+            fingerTable(k).successor ! StoreData(newData)
+          }
+        }
+      }
+    }
+
+    case QueryData(key: String, originalSender: ActorRef) => {
+      val hashedKey = Hasher.hash(key)
+      self ! QueryDataHelper(hashedKey, originalSender, 0)
+    }
+
+    case QueryDataHelper(id: Long, originalSender: ActorRef, numberOfBounces: Int) => {
+      println("made it to the helper")
+      if(range.contains(id)) {
+        println("In the right range")
+        for(k <- dataList.indices) {
+          println("ID: " + id + " DataList Id: " + dataList(k).id)
+          if(id == dataList(k).id) {
+            println("sending query response")
+            originalSender ! QueryResponse(dataList(k), numberOfBounces)
+          }
+        }
+      }
+      else {
+        println("bouncing!!!")
+        val updatedBounceNumber = numberOfBounces + 1
+        for(k <- 61 to 0 by -1) {
+          if(fingerTable(k).range.contains(id)) {
+            fingerTable(k).successor ! QueryDataHelper(id, originalSender, updatedBounceNumber)
+          }
+        }
+      }
     }
 
     case _ => {

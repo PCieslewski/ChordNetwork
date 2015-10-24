@@ -106,20 +106,35 @@ class BigDaddy extends Actor{
 //      LatchOntoParent()
     }
 
-      case IsSystemBuilt() => {
-        if(heartBeatsRecevied == heartBeatsOld) {
-          println("System has been built")
-          //context.system.scheduler.scheduleOnce(1 seconds, networkNodes(1), DisplayFingerTable())
-        }
-        else {
-          heartBeatsOld = heartBeatsRecevied
-          context.system.scheduler.scheduleOnce(1 seconds, self, IsSystemBuilt())
-        }
+    case IsSystemBuilt() => {
+      if(heartBeatsRecevied == heartBeatsOld) {
+        println("System has been built")
+        //context.system.scheduler.scheduleOnce(1 seconds, networkNodes(1), DisplayFingerTable())
+        originalNode ! StoreData(new Data("What should we eat?", "Pizza1"))
+        originalNode ! StoreData(new Data("FuckScala", "ABSOLUTELY"))
+        originalNode ! StoreData(new Data("fun", "yay"))
+        originalNode ! StoreData(new Data("pawels man crush", "dr.dobra"))
+        originalNode ! StoreData(new Data("hey", "yo"))
+        originalNode ! StoreData(new Data("more fun", "yayx2"))
+        originalNode ! StoreData(new Data("fun2", "yay4"))
+        originalNode ! StoreData(new Data("fun3", "yay5"))
+
+        context.system.scheduler.scheduleOnce(1 seconds, originalNode, QueryData("FuckScala", self))
+
       }
+      else {
+        heartBeatsOld = heartBeatsRecevied
+        context.system.scheduler.scheduleOnce(1 seconds, self, IsSystemBuilt())
+      }
+    }
 
     case HeartBeat() => {
       heartBeatsRecevied += 1
       println("Beat")
+    }
+
+    case QueryResponse(result: Data, numberOfBounces: Int) => {
+      println("Your value: " + result.value + " This many bounces: " + numberOfBounces)
     }
 
   }

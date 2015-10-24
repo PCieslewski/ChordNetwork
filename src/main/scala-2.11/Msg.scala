@@ -2,7 +2,7 @@ import akka.actor.ActorRef
 
 //This file contains all of the message definitions.
 sealed trait Msg
-//case class FindSuccessor(key: Long, origSender: ActorRef) extends Msg
+
 case class Predecessor(id: Long, originalSender: ActorRef) extends Msg
 case class InRange(id: Long) extends Msg
 case class NewNode() extends Msg
@@ -29,3 +29,8 @@ case class DisplayPreviousNode() extends Msg
 
 case class IsSystemBuilt() extends Msg
 case class HeartBeat() extends Msg
+
+case class StoreData(newData: Data) extends Msg
+case class QueryData(key: String, originalSender: ActorRef) extends Msg
+case class QueryDataHelper(id: Long, originalSender: ActorRef, numberOfBounces: Int) extends Msg
+case class QueryResponse(result: Data, numberOfBounces: Int) extends Msg
