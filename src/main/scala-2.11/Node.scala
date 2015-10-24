@@ -110,7 +110,9 @@ class Node(name: String) extends Actor{
       //Initialize child finger table. NOT THOROUGH
       for(k <- 0 to 61) {
         if(range.contains(fingerTable(k).start)){
-          fingerTable(k).successor = self
+          //fingerTable(k).successor = self
+          //TESTING NO SELF IDEA
+          fingerTable(k).successor = sender
         }
         else{
           fingerTable(k).successor = sender
@@ -152,6 +154,9 @@ class Node(name: String) extends Actor{
 
     case ChildIncoming(childRef: ActorRef, childRange: Range) => {
       for(k <- 0 to 61) {
+        if(fingerTable(k).successor == self){
+          fingerTable(k).successor = childRef
+        }
         if(childRange.contains(fingerTable(k).start)){
           fingerTable(k).successor = childRef
         }
@@ -192,7 +197,8 @@ class Node(name: String) extends Actor{
       else {
         for (k <- 0 to 61) {
           if (range.contains(fingerTable(k).start)) {
-            fingerTable(k).successor = self
+            //******************************************************************************************************
+            //fingerTable(k).successor = self
           }
           else {
             //could be fingerTable(k).successor VVV
@@ -211,14 +217,14 @@ class Node(name: String) extends Actor{
       }
       else{
         //WTF?!?!?!?!!??! I think working?
-        fingerTable(0).successor ! UpdateOthers(id, originalSender, indexOfFinger, newRange)
-        println("BOUNCE")
-//        for (k <- 61 to 0 by -1) {
-//          if (fingerTable(k).range.contains(id)) {
-//            fingerTable(k).successor ! UpdateOthers(id, originalSender, indexOfFinger, newRange)
-//            println("BOUNCE")
-//          }
-//        }
+//        fingerTable(0).successor ! UpdateOthers(id, originalSender, indexOfFinger, newRange)
+//        println("BOUNCE")
+        for (k <- 61 to 0 by -1) {
+          if (fingerTable(k).range.contains(id)) {
+            fingerTable(k).successor ! UpdateOthers(id, originalSender, indexOfFinger, newRange)
+            println("BOUNCE")
+          }
+        }
       }
     }
 
