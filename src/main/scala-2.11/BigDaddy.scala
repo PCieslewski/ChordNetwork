@@ -19,24 +19,53 @@ class BigDaddy extends Actor{
   var alex = nodeSystem.actorOf(Props(new Node("alex" + nodeCount)), name = "alex" + nodeCount)
   var bigJake = nodeSystem.actorOf(Props(new Node("bigJake" + nodeCount)), name = "bigJake" + nodeCount)
 
-  will ! SetBusy(false) //Manually tell the first actor he isnt busy
+  bigJake ! SetBusy(false) //Manually tell the first actor he isnt busy
 
-  pawel ! JoinSystem(will)
-  ng38 ! JoinSystem(pawel)
-  alex ! JoinSystem(ng38)
-  bigJake ! JoinSystem(ng38)
+  pawel ! JoinSystem(bigJake)
+  will ! JoinSystem(bigJake)
+  alex ! JoinSystem(bigJake)
+  ng38 ! JoinSystem(bigJake)
 
+//  context.system.scheduler.scheduleOnce(2 seconds, pawel, DisplayPreviousNode())
+//  context.system.scheduler.scheduleOnce(2 seconds, will, DisplayPreviousNode())
+//  context.system.scheduler.scheduleOnce(2 seconds, bigJake, DisplayPreviousNode())
+//  context.system.scheduler.scheduleOnce(2 seconds, alex, DisplayPreviousNode())
+//  context.system.scheduler.scheduleOnce(2 seconds, ng38, DisplayPreviousNode())
+
+//  context.system.scheduler.scheduleOnce(1 seconds, pawel, DisplayFingerTable())
+//  context.system.scheduler.scheduleOnce(2 seconds, will, DisplayFingerTable())
+//  context.system.scheduler.scheduleOnce(3 seconds, ng38, DisplayFingerTable())
+//  context.system.scheduler.scheduleOnce(4 seconds, alex, DisplayFingerTable())
+//  context.system.scheduler.scheduleOnce(5 seconds, bigJake, DisplayFingerTable())
+
+//  will ! UpdateFingerTable()
+//  context.system.scheduler.scheduleOnce(2 seconds, pawel, UpdateFingerTable())
+  pawel ! UpdateFingerTable()
+  ng38 ! UpdateFingerTable()
+  alex ! UpdateFingerTable()
+  bigJake ! UpdateFingerTable()
+  will ! UpdateFingerTable()
+
+//  alex ! UpdateFingerTable()
+//  bigJake ! UpdateFingerTable()
+//  context.system.scheduler.scheduleOnce(2 seconds, ng38, UpdateFingerTable())
 //  context.system.scheduler.scheduleOnce(2 seconds, ng38, JoinSystem(pawel))
 //  ng38 ! JoinSystem(will)
 //  context.system.scheduler.scheduleOnce(4 seconds, alex, JoinSystem(ng38))
 //  alex ! JoinSystem(will)
 //  context.system.scheduler.scheduleOnce(6 seconds, bigJake, JoinSystem(alex))
-//
-  context.system.scheduler.scheduleOnce(7 seconds, pawel, DisplayRange())
-  context.system.scheduler.scheduleOnce(7 seconds, will, DisplayRange())
-  context.system.scheduler.scheduleOnce(7 seconds, ng38, DisplayRange())
-  context.system.scheduler.scheduleOnce(7 seconds, alex, DisplayRange())
-  context.system.scheduler.scheduleOnce(7 seconds, bigJake, DisplayRange())
+
+//  context.system.scheduler.scheduleOnce(7 seconds, pawel, DisplayRange())
+//  context.system.scheduler.scheduleOnce(7 seconds, will, DisplayRange())
+//  context.system.scheduler.scheduleOnce(7 seconds, ng38, DisplayRange())
+//  context.system.scheduler.scheduleOnce(7 seconds, alex, DisplayRange())
+//  context.system.scheduler.scheduleOnce(7 seconds, bigJake, DisplayRange())
+
+  context.system.scheduler.scheduleOnce(4 seconds, will, DisplayFingerTable())
+  context.system.scheduler.scheduleOnce(5 seconds, pawel, DisplayFingerTable())
+  context.system.scheduler.scheduleOnce(6 seconds, ng38, DisplayFingerTable())
+  context.system.scheduler.scheduleOnce(7 seconds, alex, DisplayFingerTable())
+  context.system.scheduler.scheduleOnce(8 seconds, bigJake, DisplayFingerTable())
 
   def receive = {
     case NewNode() => {

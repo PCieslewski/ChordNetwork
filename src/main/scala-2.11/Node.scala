@@ -131,6 +131,7 @@ class Node(name: String) extends Actor{
           isBusy = true
           originalNode ! ParentResponse(prevNode, range)
           println(name + " -- sent parent response")
+//          println("Name: " + name +
         }
       }
       else{
@@ -168,6 +169,10 @@ class Node(name: String) extends Actor{
     //This initiates the joining of a child node
     case JoinOn(childId: Long, childRange: Range) => {
 
+      //Notify the previous node that there is a child incoming and that they need to update their finger table!
+      prevNode ! ChildIncoming(sender, childRange)
+
+      //Set our previous node to the child and update our range!
       prevNode = sender
       range = new Range(childId, n) //n = parentId
 
@@ -183,6 +188,14 @@ class Node(name: String) extends Actor{
       isBusy = false
       sender ! SetBusy(false)
 
+    }
+
+    case ChildIncoming(childRef: ActorRef, childRange: Range) => {
+      for(k <- 0 to 61) {
+        if(childRange.contains(fingerTable(k).start)){
+          fingerTable(k).successor = childRef
+        }
+      }
     }
 
     case JoinSystem(node: ActorRef) => {
@@ -213,17 +226,31 @@ class Node(name: String) extends Actor{
 
       //TODO: refresh this
     case UpdateFingerTable() => {
-      for(k <- 0 to 61) {
-        if(range.contains(fingerTable(k).start)) {
-          fingerTable(k).successor = self
-        }
-        else {
-          //could be fingerTable(k).successor VVV
-          self ! FindFingerSuccessor(fingerTable(k).start, self, k)
+      if(isBusy){
+        println("BUSY (inside UpdateFingerTable)")
+        context.system.scheduler.scheduleOnce(10 milliseconds, self, UpdateFingerTable())
+      }
+      else {
+        for (k <- 0 to 61) {
+          if (range.contains(fingerTable(k).start)) {
+            fingerTable(k).successor = self
+          }
+          else {
+            //could be fingerTable(k).successor VVV
+            self ! FindFingerSuccessor(fingerTable(k).start, self, k)
+          }
         }
       }
-
     }
+
+    case DisplayFingerTable() => {
+       println("FINGER TABLE OF: " + name)
+       for(k <- 0 to 61) {
+         println("FINGER NUMBER " + k + ": " + fingerTable(k))
+       }
+    }
+
+
 
 //    case ConfirmJoinOn(oldNextNode: ActorRef, oldEndPosition: Long) => {
 //      nextNode = oldNextNode
@@ -249,6 +276,9 @@ class Node(name: String) extends Actor{
 //      join(parentNode)
 //    }
 
+   case DisplayPreviousNode() => {
+    println("Name: " + name + " Previous Node: " + prevNode)
+  }
 
     case _ => {
       println("Node got a strange message.")

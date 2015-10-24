@@ -15,9 +15,12 @@ case class ParentResponse(parentPrev: ActorRef, parentOldRange: Range) extends M
 case class JoinOn(childId: Long, childRange: Range) extends Msg
 case class JoinSystem(node: ActorRef) extends Msg
 case class SetBusy(flag: Boolean) extends Msg
+case class ChildIncoming(childRef: ActorRef, childRange: Range) extends Msg
 
 case class DisplayRange() extends Msg
 
 case class FindFingerSuccessor(id: Long, originalSender: ActorRef, fingerNumber: Int) extends Msg
 case class SuccessorResponse(fingerSuccessor: ActorRef, fingerNumber: Int) extends Msg
 case class UpdateFingerTable() extends Msg
+case class DisplayFingerTable() extends Msg
+case class DisplayPreviousNode() extends Msg
