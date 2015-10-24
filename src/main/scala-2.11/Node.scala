@@ -217,14 +217,20 @@ class Node(name: String) extends Actor{
       }
       else{
         //WTF?!?!?!?!!??! I think working?
-//        fingerTable(0).successor ! UpdateOthers(id, originalSender, indexOfFinger, newRange)
-//        println("BOUNCE")
-        for (k <- 61 to 0 by -1) {
-          if (fingerTable(k).range.contains(id)) {
-            fingerTable(k).successor ! UpdateOthers(id, originalSender, indexOfFinger, newRange)
-            println("BOUNCE")
-          }
-        }
+        fingerTable(0).successor ! UpdateOthers(id, originalSender, indexOfFinger, newRange)
+        println("BOUNCE")
+//        for (k <- 61 to 0 by -1) {
+//          if (fingerTable(k).range.contains(id)) {
+//            if(fingerTable(k).successor == self){
+//              fingerTable(0).successor ! UpdateOthers(id, originalSender, indexOfFinger, newRange)
+//              println("BOUNCE SELF")
+//            }
+//            else {
+//              fingerTable(k).successor ! UpdateOthers(id, originalSender, indexOfFinger, newRange)
+//              println("BOUNCE")
+//            }
+//          }
+//        }
       }
     }
 
