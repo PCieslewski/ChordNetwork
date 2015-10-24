@@ -219,7 +219,7 @@ class Node(name: String, bigDaddy: ActorRef) extends Actor{
       else{
         //WTF?!?!?!?!!??! I think working?
         fingerTable(0).successor ! UpdateOthers(id, originalSender, indexOfFinger, newRange)
-        println("BOUNCE")
+//        println("BOUNCE")
 //        for (k <- 61 to 0 by -1) {
 //          if (fingerTable(k).range.contains(id)) {
 //            if(fingerTable(k).successor == self){
@@ -242,7 +242,7 @@ class Node(name: String, bigDaddy: ActorRef) extends Actor{
 
     case UpdateSingleFinger(id: Long, originalSender: ActorRef, indexOfFinger: Int, newRange: Range) => {
       if(newRange.contains(fingerTable(indexOfFinger-1).start)) {
-        println("Updated" + indexOfFinger + "th a finger!")
+//        println("Updated" + indexOfFinger + "th a finger!")
         fingerTable(indexOfFinger - 1).successor = originalSender
         //TESTING TRYING TO BE MORE LIKE PAPER
         prevNode ! UpdateSingleFinger(id, originalSender, indexOfFinger, newRange)
@@ -279,17 +279,18 @@ class Node(name: String, bigDaddy: ActorRef) extends Actor{
 
     case StoreData(newData: Data) => {
       if(range.contains(newData.id)) {
-        println("added to datalist")
+//        println("added to datalist")
         dataList += newData
       }
       else {
-        println("bouncing (Store)")
+//        println("bouncing (Store)")
         for(k <- 61 to 0 by -1) {
           if(fingerTable(k).range.contains(newData.id)) {
             fingerTable(k).successor ! StoreData(newData)
           }
         }
       }
+      bigDaddy ! HeartBeat()
     }
 
     case QueryData(key: String, originalSender: ActorRef) => {
@@ -298,19 +299,19 @@ class Node(name: String, bigDaddy: ActorRef) extends Actor{
     }
 
     case QueryDataHelper(id: Long, originalSender: ActorRef, numberOfBounces: Int) => {
-      println("made it to the helper")
+//      println("made it to the helper")
       if(range.contains(id)) {
-        println("In the right range")
+//        println("In the right range")
         for(k <- dataList.indices) {
-          println("ID: " + id + " DataList Id: " + dataList(k).id)
+//          println("ID: " + id + " DataList Id: " + dataList(k).id)
           if(id == dataList(k).id) {
-            println("sending query response")
+//            println("sending query response")
             originalSender ! QueryResponse(dataList(k), numberOfBounces)
           }
         }
       }
       else {
-        println("bouncing!!!")
+//        println("bouncing!!!")
         val updatedBounceNumber = numberOfBounces + 1
         for(k <- 61 to 0 by -1) {
           if(fingerTable(k).range.contains(id)) {
@@ -318,6 +319,7 @@ class Node(name: String, bigDaddy: ActorRef) extends Actor{
           }
         }
       }
+      bigDaddy ! HeartBeat()
     }
 
     case _ => {

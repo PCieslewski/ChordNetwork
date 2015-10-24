@@ -29,8 +29,12 @@ case class DisplayPreviousNode() extends Msg
 
 case class IsSystemBuilt() extends Msg
 case class HeartBeat() extends Msg
+case class QueryAllNodes() extends Msg
+case class IsEverythingComplete() extends Msg
 
 case class StoreData(newData: Data) extends Msg
 case class QueryData(key: String, originalSender: ActorRef) extends Msg
 case class QueryDataHelper(id: Long, originalSender: ActorRef, numberOfBounces: Int) extends Msg
 case class QueryResponse(result: Data, numberOfBounces: Int) extends Msg
+
+case class AreMessagesPopulated() extends Msg

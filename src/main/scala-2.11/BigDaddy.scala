@@ -7,6 +7,11 @@ class BigDaddy extends Actor{
 
   import context.dispatcher
 
+  val numNodes = 100
+  val numRequests = 5
+
+  val numberOfMessagesToStore = 200
+
   var networkNodes: ArrayBuffer[ActorRef] = new ArrayBuffer()
   val nodeSystem = ActorSystem("NodeSystem")
   var nodeCount = 1
@@ -16,6 +21,8 @@ class BigDaddy extends Actor{
 
   var originalNode = nodeSystem.actorOf(Props(new Node("PapaJ" + nodeCount, self)), name = "PapaJ" + nodeCount)
   originalNode ! SetBusy(false)
+
+  var sumBounces: Long = 0
 
 //  networkNode += nodeSystem.actorOf(Props(new Node("Bob" + nodeCount)), name = "Bob" + nodeCount)
 
@@ -91,8 +98,8 @@ class BigDaddy extends Actor{
 //  context.system.scheduler.scheduleOnce(9 seconds, alex, DisplayFingerTable())
 //  context.system.scheduler.scheduleOnce(10 seconds, bigJake, DisplayFingerTable())
 
-  for(k <- 0 to 100) {
-    context.system.scheduler.scheduleOnce(k*100 milliseconds, self, NewNode())
+  for(k <- 0 to numNodes-2) {
+    context.system.scheduler.scheduleOnce(k*50 milliseconds, self, NewNode())
     //      bigDaddy ! NewNode()
   }
 
@@ -110,17 +117,10 @@ class BigDaddy extends Actor{
       if(heartBeatsRecevied == heartBeatsOld) {
         println("System has been built")
         //context.system.scheduler.scheduleOnce(1 seconds, networkNodes(1), DisplayFingerTable())
-        originalNode ! StoreData(new Data("What should we eat?", "Pizza1"))
-        originalNode ! StoreData(new Data("FuckScala", "ABSOLUTELY"))
-        originalNode ! StoreData(new Data("fun", "yay"))
-        originalNode ! StoreData(new Data("pawels man crush", "dr.dobra"))
-        originalNode ! StoreData(new Data("hey", "yo"))
-        originalNode ! StoreData(new Data("more fun", "yayx2"))
-        originalNode ! StoreData(new Data("fun2", "yay4"))
-        originalNode ! StoreData(new Data("fun3", "yay5"))
-
-        context.system.scheduler.scheduleOnce(1 seconds, originalNode, QueryData("FuckScala", self))
-
+        for(i <- 0 to numberOfMessagesToStore) {
+          originalNode ! StoreData(new Data("Message" + i, "Value" + i))
+        }
+        context.system.scheduler.scheduleOnce(1 seconds, self, AreMessagesPopulated())
       }
       else {
         heartBeatsOld = heartBeatsRecevied
@@ -128,13 +128,49 @@ class BigDaddy extends Actor{
       }
     }
 
+    case AreMessagesPopulated() => {
+      if(heartBeatsRecevied == heartBeatsOld) {
+        println("Messages inserted into hash table.")
+
+        //Once populated, each node queries for a random message numRequests amount of times.
+        context.system.scheduler.scheduleOnce(2 seconds, self, IsEverythingComplete())
+        for(i <- 0 to numRequests-1){
+          context.system.scheduler.scheduleOnce(i seconds, self, QueryAllNodes())
+        }
+
+      }
+      else {
+        heartBeatsOld = heartBeatsRecevied
+        context.system.scheduler.scheduleOnce(1 seconds, self, AreMessagesPopulated())
+      }
+    }
+
+    case QueryAllNodes() => {
+      println("All peers making a random request.")
+      for(i <- networkNodes.indices) {
+        networkNodes(i) ! QueryData("Message" + RNG.getRandNum(numberOfMessagesToStore), self)
+      }
+    }
+
+    case IsEverythingComplete() => {
+      if(heartBeatsRecevied == heartBeatsOld) {
+        println("Simulation Complete. Results:")
+        println("Average Number of Bounces: " + (sumBounces/(numRequests*numNodes)))
+      }
+      else {
+        heartBeatsOld = heartBeatsRecevied
+        context.system.scheduler.scheduleOnce(2 seconds, self, IsEverythingComplete())
+      }
+    }
+
     case HeartBeat() => {
       heartBeatsRecevied += 1
-      println("Beat")
+      //println("Beat")
     }
 
     case QueryResponse(result: Data, numberOfBounces: Int) => {
-      println("Your value: " + result.value + " This many bounces: " + numberOfBounces)
+      //println("Your value: " + result.value + " This many bounces: " + numberOfBounces)
+      sumBounces = sumBounces + numberOfBounces
     }
 
   }
