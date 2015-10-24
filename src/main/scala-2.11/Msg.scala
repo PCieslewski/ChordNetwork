@@ -26,3 +26,6 @@ case class SuccessorResponse(fingerSuccessor: ActorRef, fingerNumber: Int) exten
 case class UpdateFingerTable() extends Msg
 case class DisplayFingerTable() extends Msg
 case class DisplayPreviousNode() extends Msg
+
+case class IsSystemBuilt() extends Msg
+case class HeartBeat() extends Msg

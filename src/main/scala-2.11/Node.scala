@@ -9,7 +9,7 @@ import scala.concurrent.duration._
 
 import scala.util._
 
-class Node(name: String) extends Actor{
+class Node(name: String, bigDaddy: ActorRef) extends Actor{
 
   import context.dispatcher
   implicit val timeout = Timeout(60 seconds)
@@ -214,6 +214,7 @@ class Node(name: String) extends Actor{
         //Rather than finding the successor. Which we are doing.
         //(I Believe this is wrong) fingerTable(indexOfFinger-1).successor = originalSender
         prevNode ! UpdateSingleFinger(id ,originalSender, indexOfFinger, newRange)
+
       }
       else{
         //WTF?!?!?!?!!??! I think working?
@@ -232,6 +233,7 @@ class Node(name: String) extends Actor{
 //          }
 //        }
       }
+      bigDaddy ! HeartBeat()
     }
 
     case UpdateLogOthers() => {
@@ -260,6 +262,7 @@ class Node(name: String) extends Actor{
 //          }
 //        }
       }
+      bigDaddy ! HeartBeat
     }
 
 

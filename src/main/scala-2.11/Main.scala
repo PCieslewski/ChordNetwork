@@ -1,5 +1,5 @@
 import javax.swing.BoundedRangeModel
-
+import scala.concurrent.duration._
 import Hasher.hash
 import akka.actor.{Props, ActorSystem}
 
@@ -22,7 +22,8 @@ object Main {
 //    println(a.contains(5))
 
     val bigSystem = ActorSystem("BigSystem")
-    bigSystem.actorOf(Props(new BigDaddy()), name="BigDaddy")
+    val bigDaddy = bigSystem.actorOf(Props(new BigDaddy()), name="BigDaddy")
+
 
 
   }
