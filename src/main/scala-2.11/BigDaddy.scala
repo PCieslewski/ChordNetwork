@@ -40,11 +40,11 @@ class BigDaddy extends Actor{
 
 //  will ! UpdateFingerTable()
 //  context.system.scheduler.scheduleOnce(2 seconds, pawel, UpdateFingerTable())
-  pawel ! UpdateFingerTable()
-  ng38 ! UpdateFingerTable()
-  alex ! UpdateFingerTable()
-  bigJake ! UpdateFingerTable()
-  will ! UpdateFingerTable()
+//  pawel ! UpdateFingerTable()
+//  ng38 ! UpdateFingerTable()
+//  alex ! UpdateFingerTable()
+//  bigJake ! UpdateFingerTable()
+//  will ! UpdateFingerTable()
 
 //  alex ! UpdateFingerTable()
 //  bigJake ! UpdateFingerTable()
