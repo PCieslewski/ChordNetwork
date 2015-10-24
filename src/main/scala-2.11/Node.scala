@@ -55,12 +55,13 @@ class Node(name: String) extends Actor{
 
       var pid: Long = (BigInt(n) - BigInt(2).pow(i-1)).toLong
       if(pid < 0) {
-        pid += (Long.MaxValue >>> 1) + 1
+        pid = pid + (Long.MaxValue >>> 1) + 1
       }
 
       for (k <- 61 to 0 by -1) {
         if (fingerTable(k).range.contains(pid)) {
-          fingerTable(k).successor ! UpdateOthers(pid, self, i)
+          //We are passing the messages forward instead of backwards... Hmmmm?
+          fingerTable(k).successor ! UpdateOthers(pid, self, i, range)
         }
       }
 
@@ -145,7 +146,7 @@ class Node(name: String) extends Actor{
 
       //*******MONEY CODE*********************************************************************//
       sender ! UpdateFingerTable()
-      context.system.scheduler.scheduleOnce(10 milliseconds, sender, UpdateLogOthers())
+      context.system.scheduler.scheduleOnce(100 milliseconds, sender, UpdateLogOthers())
 
     }
 
@@ -165,7 +166,7 @@ class Node(name: String) extends Actor{
       isBusy = flag
     }
 
-      //Asks a good node to help find where the new fingers should go
+    //Asks a good node to help find where the new fingers should go
     case FindFingerSuccessor(id: Long, originalSender: ActorRef, fingerNumber: Int) => {
       if(range.contains(id)) {
         originalSender ! SuccessorResponse(self, fingerNumber)
@@ -201,21 +202,52 @@ class Node(name: String) extends Actor{
       }
     }
 
-    case UpdateOthers(id: Long, originalSender: ActorRef, indexOfFinger: Int) => {
+    case UpdateOthers(id: Long, originalSender: ActorRef, indexOfFinger: Int, newRange: Range) => {
       if(range.contains(id)) {
-        fingerTable(indexOfFinger-1).successor = originalSender
+        //We need to send a message to our PREVIOUS NODE now to tell them to update their finger.
+        //Rather than finding the successor. Which we are doing.
+        //(I Believe this is wrong) fingerTable(indexOfFinger-1).successor = originalSender
+        prevNode ! UpdateSingleFinger(id ,originalSender, indexOfFinger, newRange)
       }
       else{
-        for (k <- 61 to 0 by -1) {
-          if (fingerTable(k).range.contains(id)) {
-            fingerTable(k).successor ! UpdateOthers(id, originalSender, indexOfFinger)
-          }
-        }
+        //WTF?!?!?!?!!??! I think working?
+        fingerTable(0).successor ! UpdateOthers(id, originalSender, indexOfFinger, newRange)
+        println("BOUNCE")
+//        for (k <- 61 to 0 by -1) {
+//          if (fingerTable(k).range.contains(id)) {
+//            fingerTable(k).successor ! UpdateOthers(id, originalSender, indexOfFinger, newRange)
+//            println("BOUNCE")
+//          }
+//        }
       }
     }
 
     case UpdateLogOthers() => {
       updateOthers()
+    }
+
+    case UpdateSingleFinger(id: Long, originalSender: ActorRef, indexOfFinger: Int, newRange: Range) => {
+      if(newRange.contains(fingerTable(indexOfFinger-1).start)) {
+        println("Updated" + indexOfFinger + "th a finger!")
+        fingerTable(indexOfFinger - 1).successor = originalSender
+        //TESTING TRYING TO BE MORE LIKE PAPER
+        prevNode ! UpdateSingleFinger(id, originalSender, indexOfFinger, newRange)
+      }
+//      if(fingerTable(indexOfFinger-1).range.contains(id)) {
+//        println("Updated a finger!")
+//        fingerTable(indexOfFinger - 1).successor = originalSender
+//        //TESTING TRYING TO BE MORE LIKE PAPER
+//        prevNode ! UpdateSingleFinger(id ,originalSender, indexOfFinger, newRange)
+//      }
+      else{
+//        for (k <- 61 to 0 by -1) {
+//          if (fingerTable(k).range.contains(id)) {
+//            //fingerTable(k).successor ! UpdateOthers(id, originalSender, indexOfFinger)
+//            fingerTable(k).successor = originalSender
+//            println("Wierd Finger Thing")
+//          }
+//        }
+      }
     }
 
 

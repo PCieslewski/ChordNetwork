@@ -26,6 +26,20 @@ class BigDaddy extends Actor{
   alex ! JoinSystem(bigJake)
   ng38 ! JoinSystem(bigJake)
 
+//  context.system.scheduler.scheduleOnce(1 seconds, pawel, JoinSystem(bigJake))
+//  context.system.scheduler.scheduleOnce(1 seconds, will, JoinSystem(bigJake))
+//  context.system.scheduler.scheduleOnce(1 seconds, alex, JoinSystem(bigJake))
+//  context.system.scheduler.scheduleOnce(1 seconds, ng38, JoinSystem(bigJake))
+
+
+//  context.system.scheduler.scheduleOnce(5 seconds, pawel, UpdateFingerTable())
+//  context.system.scheduler.scheduleOnce(5 seconds, will, UpdateFingerTable())
+//  context.system.scheduler.scheduleOnce(5 seconds, ng38, UpdateFingerTable())
+//  context.system.scheduler.scheduleOnce(5 seconds, bigJake, UpdateFingerTable())
+//  context.system.scheduler.scheduleOnce(5 seconds, alex, UpdateFingerTable())
+
+
+
 //  context.system.scheduler.scheduleOnce(2 seconds, pawel, DisplayPreviousNode())
 //  context.system.scheduler.scheduleOnce(2 seconds, will, DisplayPreviousNode())
 //  context.system.scheduler.scheduleOnce(2 seconds, bigJake, DisplayPreviousNode())
@@ -61,11 +75,11 @@ class BigDaddy extends Actor{
 //  context.system.scheduler.scheduleOnce(7 seconds, alex, DisplayRange())
 //  context.system.scheduler.scheduleOnce(7 seconds, bigJake, DisplayRange())
 
-  context.system.scheduler.scheduleOnce(4 seconds, will, DisplayFingerTable())
-  context.system.scheduler.scheduleOnce(5 seconds, pawel, DisplayFingerTable())
-  context.system.scheduler.scheduleOnce(6 seconds, ng38, DisplayFingerTable())
-  context.system.scheduler.scheduleOnce(7 seconds, alex, DisplayFingerTable())
-  context.system.scheduler.scheduleOnce(8 seconds, bigJake, DisplayFingerTable())
+  context.system.scheduler.scheduleOnce(6 seconds, will, DisplayFingerTable())
+  context.system.scheduler.scheduleOnce(7 seconds, pawel, DisplayFingerTable())
+  context.system.scheduler.scheduleOnce(8 seconds, ng38, DisplayFingerTable())
+  context.system.scheduler.scheduleOnce(9 seconds, alex, DisplayFingerTable())
+  context.system.scheduler.scheduleOnce(10 seconds, bigJake, DisplayFingerTable())
 
   def receive = {
     case NewNode() => {

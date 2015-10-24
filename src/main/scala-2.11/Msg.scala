@@ -15,8 +15,9 @@ case class JoinOn(childId: Long, childRange: Range) extends Msg
 case class JoinSystem(node: ActorRef) extends Msg
 case class SetBusy(flag: Boolean) extends Msg
 case class ChildIncoming(childRef: ActorRef, childRange: Range) extends Msg
-case class UpdateOthers(id: Long, originalSender: ActorRef, indexOfFinger: Int) extends Msg
+case class UpdateOthers(id: Long, originalSender: ActorRef, indexOfFinger: Int, newRange: Range) extends Msg
 case class UpdateLogOthers() extends Msg
+case class UpdateSingleFinger(id: Long, originalSender: ActorRef, indexOfFinger: Int, newRange: Range) extends Msg
 
 case class DisplayRange() extends Msg
 
