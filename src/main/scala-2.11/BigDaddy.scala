@@ -9,7 +9,18 @@ class BigDaddy(numNodesPassed: Int, numRequestsPassed: Int) extends Actor{
 
   val numNodes = numNodesPassed
   val numRequests = numRequestsPassed
-  val delayBetweenNodeInsertion = 50
+  var delayBetweenNodeInsertion = 200
+
+  if(numNodes <= 100){
+    delayBetweenNodeInsertion = 50
+  }
+  else if(numNodes > 100 && numNodes <= 1000){
+    delayBetweenNodeInsertion = 100
+  }
+  else{
+    delayBetweenNodeInsertion = 200
+  }
+
   val numberOfMessagesToStore = 200
 
   var networkNodes: ArrayBuffer[ActorRef] = new ArrayBuffer()

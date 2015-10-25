@@ -4,7 +4,7 @@ object Main {
 
   def main(args: Array[String]) {
 
-    var numNodes = 100
+    var numNodes = 5000
     var numRequests = 5
 
     if(!args.isEmpty){
