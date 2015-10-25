@@ -1,6 +1,4 @@
 *.class
 /target
 /.idea/workspace.xml
-*.cache
-/project/target
 *.iml
