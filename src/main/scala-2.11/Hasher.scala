@@ -7,7 +7,6 @@ object Hasher {
 
     val md = java.security.MessageDigest.getInstance("SHA-1")
 
-//  println("IN: " + in)
     val bytes: Array[Byte] = md.digest(in.getBytes) //160 bit SHA-1 Hash
 
     var longBytes: Array[Byte] = bytes.slice(bytes.length-8, bytes.length)

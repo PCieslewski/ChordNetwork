@@ -1,29 +1,25 @@
-import javax.swing.BoundedRangeModel
-import scala.concurrent.duration._
-import Hasher.hash
-import akka.actor.{Props, ActorSystem}
+import akka.actor._
 
 object Main {
 
   def main(args: Array[String]) {
 
-//    println(hash("Hello"))
-//    println(hash("Hello"))
-//    println(hash("Hello"))
-//     val a: Node = new Node("aasadftrmnhg")
-//    a.initFingerTable()
+    var numNodes = 100
+    var numRequests = 5
 
-//    for(i <- 10 to 1 by -1) {
-//      println(i)
-//    }
+    if(!args.isEmpty){
+      numNodes = args(0).toInt
+      numRequests = args(1).toInt
+    }
 
-//  var a: Range = new Range(5,1)
-//    println(a.contains(1))
-//    println(a.contains(5))
+    println("Creating Chord Network...")
+    println("Number of Nodes: " + numNodes)
+    println("Number of Requests: " + numRequests)
+
+    Thread.sleep(1500)
 
     val bigSystem = ActorSystem("BigSystem")
-    val bigDaddy = bigSystem.actorOf(Props(new BigDaddy()), name="BigDaddy")
-
+    val bigDaddy = bigSystem.actorOf(Props(new BigDaddy(numNodes, numRequests)), name="BigDaddy")
 
 
   }

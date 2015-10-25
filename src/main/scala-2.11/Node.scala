@@ -2,12 +2,8 @@ import akka.actor._
 import akka.pattern.{ask, pipe}
 import akka.util._
 
-import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.Future
 import scala.concurrent.duration._
-
-import scala.util._
 
 class Node(name: String, bigDaddy: ActorRef) extends Actor{
 
@@ -15,7 +11,7 @@ class Node(name: String, bigDaddy: ActorRef) extends Actor{
   implicit val timeout = Timeout(60 seconds)
 
   val n: Long = Hasher.hash(name)
-  println(name + " " + n + " " + self)
+  println("New node joining system. Name: " + name)
 
   var prevNode: ActorRef = self
 
@@ -58,12 +54,12 @@ class Node(name: String, bigDaddy: ActorRef) extends Actor{
         pid = pid + (Long.MaxValue >>> 1) + 1
       }
 
-      for (k <- 61 to 0 by -1) {
-        if (fingerTable(k).range.contains(pid)) {
-          //We are passing the messages forward instead of backwards... Hmmmm?
-          fingerTable(k).successor ! UpdateOthers(pid, self, i, range)
-        }
-      }
+      prevNode ! UpdateOthers(pid, self, i, range)
+//      for (k <- 61 to 0 by -1) {
+//        if (fingerTable(k).range.contains(pid)) {
+//          //fingerTable(k).successor ! UpdateOthers(pid, self, i, range)
+//        }
+//      }
 
     }
   }
@@ -86,8 +82,6 @@ class Node(name: String, bigDaddy: ActorRef) extends Actor{
         else {
           isBusy = true
           originalNode ! ParentResponse(prevNode, range)
-          println(name + " -- sent parent response")
-//          println("Name: " + name +
         }
       }
       else{
@@ -107,16 +101,9 @@ class Node(name: String, bigDaddy: ActorRef) extends Actor{
       prevNode = parentPrev
       range = new Range(parentOldRange.getStart(),n)
 
-      //Initialize child finger table. NOT THOROUGH
+      //Initialize child finger table.
       for(k <- 0 to 61) {
-        if(range.contains(fingerTable(k).start)){
-          //fingerTable(k).successor = self
-          //TESTING NO SELF IDEA
-          fingerTable(k).successor = sender
-        }
-        else{
-          fingerTable(k).successor = sender
-        }
+        fingerTable(k).successor = sender
       }
 
       //Initiate Join
@@ -134,8 +121,6 @@ class Node(name: String, bigDaddy: ActorRef) extends Actor{
       prevNode = sender
       range = new Range(childId, n) //n = parentId
 
-      //Ensure that any fingers which may point to child are updated
-      //COULD BE OPTIMIZED - i think
       for(k <- 0 to 61) {
         if(childRange.contains(fingerTable(k).start)){
           fingerTable(k).successor = sender
@@ -145,8 +130,6 @@ class Node(name: String, bigDaddy: ActorRef) extends Actor{
       //Set busy back to false to accept new nodes into the system.
       isBusy = false
       sender ! SetBusy(false)
-
-      //*******MONEY CODE*********************************************************************//
       sender ! UpdateFingerTable()
       context.system.scheduler.scheduleOnce(100 milliseconds, sender, UpdateLogOthers())
 
@@ -191,17 +174,13 @@ class Node(name: String, bigDaddy: ActorRef) extends Actor{
 
     case UpdateFingerTable() => {
       if(isBusy){
-        println("BUSY (inside UpdateFingerTable)")
         context.system.scheduler.scheduleOnce(10 milliseconds, self, UpdateFingerTable())
       }
       else {
         for (k <- 0 to 61) {
           if (range.contains(fingerTable(k).start)) {
-            //******************************************************************************************************
-            //fingerTable(k).successor = self
           }
           else {
-            //could be fingerTable(k).successor VVV
             self ! FindFingerSuccessor(fingerTable(k).start, self, k)
           }
         }
@@ -210,28 +189,10 @@ class Node(name: String, bigDaddy: ActorRef) extends Actor{
 
     case UpdateOthers(id: Long, originalSender: ActorRef, indexOfFinger: Int, newRange: Range) => {
       if(range.contains(id)) {
-        //We need to send a message to our PREVIOUS NODE now to tell them to update their finger.
-        //Rather than finding the successor. Which we are doing.
-        //(I Believe this is wrong) fingerTable(indexOfFinger-1).successor = originalSender
-        prevNode ! UpdateSingleFinger(id ,originalSender, indexOfFinger, newRange)
-
+        prevNode ! UpdateSingleFinger(id, originalSender, indexOfFinger, newRange)
       }
       else{
-        //WTF?!?!?!?!!??! I think working?
-        fingerTable(0).successor ! UpdateOthers(id, originalSender, indexOfFinger, newRange)
-//        println("BOUNCE")
-//        for (k <- 61 to 0 by -1) {
-//          if (fingerTable(k).range.contains(id)) {
-//            if(fingerTable(k).successor == self){
-//              fingerTable(0).successor ! UpdateOthers(id, originalSender, indexOfFinger, newRange)
-//              println("BOUNCE SELF")
-//            }
-//            else {
-//              fingerTable(k).successor ! UpdateOthers(id, originalSender, indexOfFinger, newRange)
-//              println("BOUNCE")
-//            }
-//          }
-//        }
+        prevNode ! UpdateOthers(id, originalSender, indexOfFinger, newRange)
       }
       bigDaddy ! HeartBeat()
     }
@@ -242,25 +203,8 @@ class Node(name: String, bigDaddy: ActorRef) extends Actor{
 
     case UpdateSingleFinger(id: Long, originalSender: ActorRef, indexOfFinger: Int, newRange: Range) => {
       if(newRange.contains(fingerTable(indexOfFinger-1).start)) {
-//        println("Updated" + indexOfFinger + "th a finger!")
         fingerTable(indexOfFinger - 1).successor = originalSender
-        //TESTING TRYING TO BE MORE LIKE PAPER
         prevNode ! UpdateSingleFinger(id, originalSender, indexOfFinger, newRange)
-      }
-//      if(fingerTable(indexOfFinger-1).range.contains(id)) {
-//        println("Updated a finger!")
-//        fingerTable(indexOfFinger - 1).successor = originalSender
-//        //TESTING TRYING TO BE MORE LIKE PAPER
-//        prevNode ! UpdateSingleFinger(id ,originalSender, indexOfFinger, newRange)
-//      }
-      else{
-//        for (k <- 61 to 0 by -1) {
-//          if (fingerTable(k).range.contains(id)) {
-//            //fingerTable(k).successor ! UpdateOthers(id, originalSender, indexOfFinger)
-//            fingerTable(k).successor = originalSender
-//            println("Wierd Finger Thing")
-//          }
-//        }
       }
       bigDaddy ! HeartBeat
     }
@@ -279,11 +223,9 @@ class Node(name: String, bigDaddy: ActorRef) extends Actor{
 
     case StoreData(newData: Data) => {
       if(range.contains(newData.id)) {
-//        println("added to datalist")
         dataList += newData
       }
       else {
-//        println("bouncing (Store)")
         for(k <- 61 to 0 by -1) {
           if(fingerTable(k).range.contains(newData.id)) {
             fingerTable(k).successor ! StoreData(newData)
@@ -299,19 +241,14 @@ class Node(name: String, bigDaddy: ActorRef) extends Actor{
     }
 
     case QueryDataHelper(id: Long, originalSender: ActorRef, numberOfBounces: Int) => {
-//      println("made it to the helper")
       if(range.contains(id)) {
-//        println("In the right range")
         for(k <- dataList.indices) {
-//          println("ID: " + id + " DataList Id: " + dataList(k).id)
           if(id == dataList(k).id) {
-//            println("sending query response")
             originalSender ! QueryResponse(dataList(k), numberOfBounces)
           }
         }
       }
       else {
-//        println("bouncing!!!")
         val updatedBounceNumber = numberOfBounces + 1
         for(k <- 61 to 0 by -1) {
           if(fingerTable(k).range.contains(id)) {
